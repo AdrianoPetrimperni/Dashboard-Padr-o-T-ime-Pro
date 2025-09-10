@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Marketing x Vendas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .chart-container, .analysis-container, .table-container {
+            @apply bg-white p-6 rounded-xl shadow-md;
+        }
+        .metric-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            @apply shadow-lg;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            @apply shadow-xl;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        .icon-container {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        /* Definição de cores para as barras de progresso do funil */
+        .progress-bar-leads {
+            background-color: #9ca3af; /* gray-400 */
+        }
+        .progress-bar-opportunities {
+            background-color: #f59e0b; /* amber-500 */
+        }
+        .progress-bar-proposals {
+            background-color: #ea580c; /* orange-600 */
+        }
+        .progress-bar-sales {
+            background-color: #16a34a; /* green-600 */
+        }
+        .progress-bar-lost {
+            background-color: #dc2626; /* red-600 */
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #16a34a;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Cabeçalho Centralizado com filtro em linha -->
+        <div class="bg-white p-4 rounded-xl shadow-md flex flex-col lg:flex-row items-center justify-between mb-8">
+            <div class="flex flex-col md:flex-row items-center text-center md:text-left mb-4 md:mb-0 space-y-2 md:space-y-0 md:space-x-4">
+                <img src="https://cdn.wts.chat/static/partners/app.taime.pro/logo-text.svg" alt="Logo Táime" class="h-10">
+                <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Dashboard Marketing x Vendas</h1>
+            </div>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex flex-col items-center">
+                    <label for="startDate" class="text-sm font-medium text-gray-700">Data de Início</label>
+                    <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex flex-col items-center">
+                    <label for="endDate" class="text-sm font-medium text-gray-700">Data de Fim</label>
+                    <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <button id="filterBtn" class="mt-4 md:mt-0 px-6 py-2 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors">Filtrar</button>
+            </div>
+        </div>
+
+        <!-- Total de Leads por Canal -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                    Total de Leads por Canal
+                </span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                <!-- Google Ads -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-GOOGLE">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-GOOGLE-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <div class="icon-container">
+                            <img src="https://cdn4.iconfinder.com/data/icons/logos-brands-7/512/google_ads-512.png" alt="Logo Google Ads">
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Google Ads</h3>
+                    </div>
+                </div>
+                <!-- Meta Ads -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-META">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-META-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <div class="icon-container">
+                            <img src="https://cdn-icons-png.flaticon.com/128/6033/6033716.png" alt="Logo Meta Ads">
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Meta Ads</h3>
+                    </div>
+                </div>
+                <!-- Prospecção -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-PROSPECÇÃO ATIVA">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-PROSPECÇÃO ATIVA-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <div class="icon-container" style="width: 32px; height: 32px;">
+                            <img src="https://static.vecteezy.com/system/resources/previews/018/930/564/non_2x/whatsapp-logo-whatsapp-icon-whatsapp-transparent-free-png.png" alt="Logo WhatsApp">
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">Prospecção</h3>
+                    </div>
+                </div>
+                <!-- Indicação -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-INDICAÇÃO">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-INDICAÇÃO-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <span role="img" aria-label="Indicação">🤝</span>
+                        <h3 class="text-lg font-semibold text-gray-800">Indicação</h3>
+                    </div>
+                </div>
+                <!-- Orgânicas -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-ORGÂNICO">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-ORGÂNICO-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <span role="img" aria-label="Orgânicas">🌱</span>
+                        <h3 class="text-lg font-semibold text-gray-800">Orgânicas</h3>
+                    </div>
+                </div>
+                <!-- Sem Origem -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-SEM ORIGEM">0</div>
+                        <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-SEM ORIGEM-rate">0%</span> do total</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-center gap-2">
+                        <span role="img" aria-label="Sem Origem">❓</span>
+                        <h3 class="text-lg font-semibold text-gray-800">Sem Origem</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <hr class="my-12">
+
+        <!-- Seção 2: KPIs por Etapa do Funil -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                    Desempenho por Etapa do Funil
+                </span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+                <!-- Leads -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800" id="kpi-leads">0</div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Leads</h3>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="progress-bar-leads h-3 rounded-full" id="progress-leads"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 text-center">
+                        <span class="font-medium">Total de Leads</span>
+                    </div>
+                </div>
+                <!-- Oportunidades -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800" id="kpi-oportunidades">0</div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Oportunidades</h3>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="progress-bar-opportunities h-3 rounded-full" id="progress-oportunidades"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 text-center">
+                        <span class="font-medium text-amber-600" id="opportunities-rate">0%</span> de conversão
+                    </div>
+                </div>
+                <!-- Propostas -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800" id="kpi-propostas">0</div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Propostas</h3>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="progress-bar-proposals h-3 rounded-full" id="progress-propostas"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 text-center">
+                        <span class="font-medium text-orange-600" id="proposals-rate">0%</span> de conversão
+                    </div>
+                </div>
+                <!-- Vendas -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800" id="kpi-vendas">0</div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Vendas</h3>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="progress-bar-sales h-3 rounded-full" id="progress-vendas"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 text-center">
+                        <span class="font-medium text-green-600" id="sales-rate">0%</span> de conversão
+                    </div>
+                </div>
+                <!-- Perdidos -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl font-bold text-gray-800" id="kpi-perdidos">0</div>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Perdidos</h3>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="progress-bar-lost h-3 rounded-full" id="progress-perdidos"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 text-center">
+                        <span class="font-medium text-red-600" id="lost-rate">0%</span> de conversão
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análise de Funil -->
+        <div class="analysis-container mb-12">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Análise de Funil</h2>
+            <p id="funnel-analysis-text" class="text-gray-600 leading-relaxed"></p>
+        </div>
+
+        <hr class="my-12">
+
+        <!-- Seção de Metas (Geral) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+            <div class="table-container flex-grow">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Metas de Conversão</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Oportunidades</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Propostas</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metas-tabela" class="bg-white divide-y divide-gray-200">
+                            <!-- Linhas da tabela de metas serão injetadas aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="flex-grow">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Comparativo de Meta (Período Selecionado)</h2>
+                <div id="meta-comparison" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Conteúdo do comparativo de meta será injetado aqui -->
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-12">
+        <!-- Nova Seção para Projeção e Ticket Médio -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                    Projeção e Análise Financeira
+                </span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card Projeção Ticket Médio -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <p class="text-sm font-semibold text-gray-600">Ticket Médio Projetado</p>
+                        <p id="ticket-medio-proj" class="text-3xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                </div>
+                <!-- Card Ticket Médio Realizado -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <p class="text-sm font-semibold text-gray-600">Ticket Médio Realizado</p>
+                        <p id="ticket-medio-realizado" class="text-3xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                </div>
+                <!-- Card Negócios Perdidos -->
+                <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                    <div class="text-center mb-4">
+                        <p class="text-sm font-semibold text-gray-600">Negócios Perdidos</p>
+                        <p id="negocios-perdidos-valor" class="text-3xl font-bold text-red-600 mt-1">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <hr class="my-12">
+        <!-- Seção de Análise e Ranking por Vendedor -->
+        <div class="table-container mb-12">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Análise e Ranking por Vendedor</h2>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0 md:space-x-4">
+                <div class="bg-indigo-100 p-4 rounded-xl flex-grow text-center">
+                    <p class="text-sm font-semibold text-indigo-800">Média de Leads por Vendedor no Período:</p>
+                    <p id="avg-leads-per-seller" class="text-3xl font-bold text-indigo-600 mt-1">0</p>
+                </div>
+                <div class="bg-indigo-100 p-4 rounded-xl flex-grow text-center">
+                    <p class="text-sm font-semibold text-indigo-800">Meta Diária de Vendas por Vendedor:</p>
+                    <p id="daily-sales-goal-per-seller" class="text-3xl font-bold text-indigo-600 mt-1">0</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Leads</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Vendas</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Qualificação</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Proposta</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Vendas</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Receita de Vendas</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Perdidos em Reais</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Perdidos</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Desempenho</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-tabela" class="bg-white divide-y divide-gray-200">
+                        <!-- Linhas da tabela de ranking serão injetadas aqui -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <hr class="my-12">
+
+        <!-- Análise Anual -->
+        <div class="analysis-container mb-12">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Recomendações e Metas Anuais</h2>
+            <p id="annual-analysis-text" class="text-gray-600 leading-relaxed"></p>
+        </div>
+
+        <hr class="my-12">
+
+        <!-- Seção de Gráficos -->
+        <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Visualização de Dados</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="chart-container">
+                <canvas id="leadsByOriginChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="funnelBottleneckChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Dados brutos incorporados dos CSVs
+        const rawLeadsData = `DATA,TIMESTAMP,LEAD_ID,ORIGEM,RESPONSAVEL,LEAD,GOOGLE,META,ORGÂNICO,PROSPECÇÃO ATIVA,INDICAÇÃO,SEM ORIGEM
+08/09/2025,,,SITE,Isabela Alves,1,,,1,,,
+08-09-2025,,,SITE,Isabela Alves,1,,,1,,,
+09-09-2025,,,META,Isabela Alves,1,,1,,,
+10-09-2025,,,META,Isabela Alves,1,,1,,,
+11-09-2025,,,META,Isabela Alves,1,,1,,,
+12-09-2025,,,META,Isabela Alves,1,,1,,,
+13-09-2025,,,META,Isabela Alves,1,,1,,,
+14-09-2025,,,META,Adriano Petrimperni,1,,1,,,
+15-09-2025,,,META,Adriano Petrimperni,1,,1,,,
+16-09-2025,,,META,Adriano Petrimperni,1,,1,,,
+17-09-2025,,,GOOGLE,Adriano Petrimperni,1,1,,,,
+18-09-2025,,,GOOGLE,Adriano Petrimperni,1,1,,,,
+19-09-2025,,,GOOGLE,Adriano Petrimperni,1,1,,,,
+19-09-2025,,,GOOGLE,Adriano Petrimperni,1,1,,,,
+19-09-2025,,,GOOGLE,Adriano Petrimperni,1,1,,,,
+19-09-2025,,,META,Adriano Petrimperni,1,,1,,,
+19-09-2025,,,INDICAÇÃO,Ingrid Alves,1,,,,,1,
+19-09-2025,,,PROSPECÇÃO,Ingrid Alves,1,,,,1,,
+20-09-2025,,,GOOGLE,Ingrid Alves,1,1,,,,
+20-09-2025,,,META,Isabela Alves,1,,1,,,
+20-09-2025,,,ORGÂNICO,Adriano Petrimperni,1,,,1,,
+20-09-2025,,,INDICAÇÃO,Isabela Alves,1,,,,,1,
+21-09-2025,,,SEM ORIGEM,Ingrid Alves,1,,,,,,1
+21-09-2025,,,SEM ORIGEM,Adriano Petrimperni,1,,,,,,1`;
+
+        const rawConversionData = `DATA,OPORTUNIDADE,PROPOSTA,VENDA,PERDIDO,RESPONSÁVEL,VALOR_ESTIMADO
+08-09-2025,1,1,0,0,Isabela Alves,3000
+08-09-2025,1,1,0,0,Isabela Alves,3000
+09-09-2025,1,1,0,0,Isabela Alves,3000
+10-09-2025,1,1,0,0,Isabela Alves,3000
+11-09-2025,1,1,0,0,Isabela Alves,3000
+12-09-2025,1,1,0,0,Isabela Alves,3000
+13-09-2025,1,1,0,0,Isabela Alves,3000
+14-09-2025,1,1,0,0,Isabela Alves,3000
+15-09-2025,1,0,1,0,Isabela Alves,5200
+16-09-2025,1,0,1,0,Adriano Petrimperni,6300
+17-09-2025,1,0,1,0,Adriano Petrimperni,6800
+18-09-2025,1,0,1,0,Adriano Petrimperni,7100
+19-09-2025,1,0,1,0,Adriano Petrimperni,7500
+19-09-2025,1,0,1,0,Adriano Petrimperni,7800
+19-09-2025,0,0,0,1,Adriano Petrimperni,1000
+19-09-2025,0,0,0,1,Adriano Petrimperni,2000
+19-09-2025,0,0,0,1,Adriano Petrimperni,1500
+19-09-2025,0,0,0,1,Adriano Petrimperni,2500
+19-09-2025,1,0,0,1,Adriano Petrimperni,3000
+19-09-2025,1,1,0,0,Ingrid Alves,4000
+19-09-2025,1,1,1,0,Ingrid Alves,8000
+20-09-2025,1,1,0,0,Ingrid Alves,5000
+20-09-2025,1,1,1,0,Isabela Alves,7500
+20-09-2025,1,0,1,0,Adriano Petrimperni,6000
+20-09-2025,1,1,0,0,Isabela Alves,4500`;
+
+        const rawGoalsData = `,LEADS,OPORTUNIDADES,PROPOSTA,VENDAS,VALOR_ESTIMADO
+MENSAL,2160,1728,1382.416667,530,1000000
+SEMANAL,540,432,345.6041667,132.5,250000
+DIÁRIO,72,57.6,46.08055556,17.66666667,50000
+ANUAL,25920,20736,16589,6360,12000000
+NUMERO DE VENDEDORES ATUAIS,10,,,,\n`;
+
+        let leadsData, conversionData, goalsData, charts = {};
+        
+        // Função para converter strings CSV em arrays de objetos
+        function parseCSV(csvString) {
+            const lines = csvString.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().toUpperCase().replace(/Ç/g, 'C').replace(/Á/g, 'A').replace(/Õ/g, 'O'));
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const obj = {};
+                headers.forEach((header, i) => {
+                    const value = values[i] ? values[i].trim() : null;
+                    if (header === 'LEAD' || header.match(/GOOGLE|META|ORGÂNICO|PROSPECÇÃO ATIVA|INDICAÇÃO|SEM ORIGEM/)) {
+                        obj[header] = parseInt(value, 10) || 0;
+                    } else if (header.match(/OPORTUNIDADE|PROPOSTA|VENDA|PERDIDO/)) {
+                        obj[header] = parseInt(value, 10) || 0;
+                    } else if (header === 'VALOR_ESTIMADO') {
+                        obj[header] = parseFloat(value) || 0;
+                    } else {
+                        obj[header] = value;
+                    }
+                });
+                return obj;
+            });
+        }
+        
+        // Função para filtrar os dados por um intervalo de datas
+        function filterDataByDate(data, dateKey, startDate, endDate) {
+            if (!startDate || !endDate) return data;
+            
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setDate(end.getDate() + 1);
+
+            return data.filter(item => {
+                // Trata formatos de data como 'DD-MM-YYYY' ou 'DD/MM/YYYY'
+                const dateParts = item[dateKey].split(/[-/]/);
+                const itemDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                return itemDate >= start && itemDate < end;
+            });
+        }
+
+        // Função para calcular os KPIs por origem, somando os valores das colunas de leads
+        function calculateSourceKPIs(data) {
+            const sourceCounts = {
+                'GOOGLE': 0,
+                'META': 0,
+                'ORGÂNICO': 0,
+                'PROSPECÇÃO ATIVA': 0,
+                'INDICAÇÃO': 0,
+                'SEM ORIGEM': 0
+            };
+            data.forEach(lead => {
+                // Soma os valores das colunas específicas
+                sourceCounts['GOOGLE'] += lead['GOOGLE'] || 0;
+                sourceCounts['META'] += lead['META'] || 0;
+                sourceCounts['ORGÂNICO'] += lead['ORGÂNICO'] || 0;
+                sourceCounts['PROSPECÇÃO ATIVA'] += lead['PROSPECÇÃO ATIVA'] || 0;
+                sourceCounts['INDICAÇÃO'] += lead['INDICAÇÃO'] || 0;
+                sourceCounts['SEM ORIGEM'] += lead['SEM ORIGEM'] || 0;
+
+                // Lida com casos onde a origem é listada apenas na coluna 'ORIGEM'
+                if (lead['ORIGEM'] && lead['ORIGEM'].toUpperCase().trim() === 'SITE') {
+                    sourceCounts['ORGÂNICO']++;
+                }
+                 if (lead['ORIGEM'] && lead['ORIGEM'].toUpperCase().trim() === 'PROSPECÇÃO') {
+                    sourceCounts['PROSPECÇÃO ATIVA']++;
+                }
+            });
+            return sourceCounts;
+        }
+
+        // Função para calcular os KPIs e conversões por etapa
+        function calculateFunnelKPIs(leadsData, conversionData) {
+            // A contagem total de leads é a soma de todos os leads por canal, para garantir a precisão
+            const sourceCounts = calculateSourceKPIs(leadsData);
+            const totalLeads = Object.values(sourceCounts).reduce((sum, count) => sum + count, 0);
+
+            // Soma os valores das colunas de conversão
+            const totalOpportunities = conversionData.reduce((sum, item) => sum + (item.OPORTUNIDADE || 0), 0);
+            const totalProposals = conversionData.reduce((sum, item) => sum + (item.PROPOSTA || 0), 0);
+            const totalSales = conversionData.reduce((sum, item) => sum + (item.VENDA || 0), 0);
+            const totalLost = conversionData.reduce((sum, item) => sum + (item.PERDIDO || 0), 0);
+
+            const leadsToOpportunitiesRate = totalLeads > 0 ? (totalOpportunities / totalLeads) * 100 : 0;
+            const opportunitiesToProposalsRate = totalOpportunities > 0 ? (totalProposals / totalOpportunities) * 100 : 0;
+            const proposalsToSalesRate = totalProposals > 0 ? (totalSales / totalProposals) * 100 : 0;
+            const lostRate = totalOpportunities > 0 ? (totalLost / totalOpportunities) * 100 : 0;
+
+            return {
+                totalLeads, totalOpportunities, totalProposals, totalSales, totalLost,
+                leadsToOpportunitiesRate, opportunitiesToProposalsRate, proposalsToSalesRate, lostRate
+            };
+        }
+
+        // Análise de funil baseada em regras de negócio
+        function generateFunnelAnalysis(funnelData) {
+            const analysis = [];
+            const { leadsToOpportunitiesRate, opportunitiesToProposalsRate, proposalsToSalesRate } = funnelData;
+
+            if (leadsToOpportunitiesRate < 40) {
+                analysis.push("<strong>Gargalo na Qualificação (Leads -> Oportunidades):</strong> A taxa de conversão está baixa. Isso pode indicar a necessidade de melhorar o tempo de resposta inicial, o script de abordagem ou a qualificação dos leads para a equipe de vendas.");
+            }
+
+            if (opportunitiesToProposalsRate < 40) {
+                analysis.push("<strong>Gargalo na Negociação (Oportunidades -> Propostas):</strong> Uma taxa de conversão baixa sugere dificuldades em apresentar a solução. É crucial refinar a demonstração de valor do serviço, entender as objeções do cliente e focar em como o produto resolve o problema dele.");
+            }
+
+            if (proposalsToSalesRate < 30) {
+                analysis.push("<strong>Gargalo no Fechamento (Propostas -> Vendas):</strong> A baixa conversão para vendas aponta para problemas na fase final. A equipe pode precisar de treinamento em técnicas de fechamento e estratégias para um follow-up mais assertivo.");
+            }
+
+            if (analysis.length === 0) {
+                return "O funil está performando muito bem neste período! Continue otimizando o processo para manter o bom desempenho.";
+            }
+
+            return analysis.join('<br><br>');
+        }
+
+        // Função para renderizar os cards de KPI
+        function renderKPIs(sourceData, funnelData) {
+            const totalLeads = Object.values(sourceData).reduce((sum, count) => sum + count, 0);
+            
+            const kpiMap = {
+                'GOOGLE': 'kpi-GOOGLE', 'META': 'kpi-META', 'ORGÂNICO': 'kpi-ORGÂNICO',
+                'PROSPECÇÃO ATIVA': 'kpi-PROSPECÇÃO ATIVA', 'INDICAÇÃO': 'kpi-INDICAÇÃO', 'SEM ORIGEM': 'kpi-SEM ORIGEM'
+            };
+            
+            for (const key in sourceData) {
+                const kpiId = kpiMap[key];
+                if (kpiId) {
+                    document.getElementById(kpiId).textContent = sourceData[key];
+                    const percentage = totalLeads > 0 ? (sourceData[key] / totalLeads) * 100 : 0;
+                    const rateElement = document.getElementById(kpiId + '-rate');
+                    if(rateElement){
+                        rateElement.textContent = `${percentage.toFixed(1)}%`;
+                    }
+                }
+            }
+
+            // Render Funnel KPIs
+            document.getElementById('kpi-leads').textContent = funnelData.totalLeads;
+            document.getElementById('kpi-oportunidades').textContent = funnelData.totalOpportunities;
+            document.getElementById('kpi-propostas').textContent = funnelData.totalProposals;
+            document.getElementById('kpi-vendas').textContent = funnelData.totalSales;
+            document.getElementById('kpi-perdidos').textContent = funnelData.totalLost;
+
+            // Render Funnel Rates
+            document.getElementById('opportunities-rate').textContent = `${funnelData.leadsToOpportunitiesRate.toFixed(1)}%`;
+            document.getElementById('proposals-rate').textContent = `${funnelData.opportunitiesToProposalsRate.toFixed(1)}%`;
+            document.getElementById('sales-rate').textContent = `${funnelData.proposalsToSalesRate.toFixed(1)}%`;
+            document.getElementById('lost-rate').textContent = `${funnelData.lostRate.toFixed(1)}%`;
+            
+            // Set progress bar widths for Funnel KPIs
+            if (funnelData.totalLeads > 0) {
+                document.getElementById('progress-leads').style.width = '100%';
+                document.getElementById('progress-oportunidades').style.width = `${funnelData.leadsToOpportunitiesRate.toFixed(1)}%`;
+                document.getElementById('progress-propostas').style.width = `${funnelData.opportunitiesToProposalsRate.toFixed(1)}%`;
+                document.getElementById('progress-vendas').style.width = `${funnelData.proposalsToSalesRate.toFixed(1)}%`;
+                document.getElementById('progress-perdidos').style.width = `${funnelData.lostRate.toFixed(1)}%`;
+            }
+        }
+        
+        // Função para renderizar os gráficos
+        function renderCharts(leadsData, conversionData, funnelData) {
+            if (charts.leadsByOrigin) charts.leadsByOrigin.destroy();
+            if (charts.funnelBottleneck) charts.funnelBottleneck.destroy();
+
+            // Gráfico de Leads por Origem
+            const leadsByOrigin = calculateSourceKPIs(leadsData);
+            charts.leadsByOrigin = new Chart(document.getElementById('leadsByOriginChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(leadsByOrigin).map(label => label.toUpperCase()),
+                    datasets: [{
+                        label: 'Número de Leads',
+                        data: Object.values(leadsByOrigin),
+                        backgroundColor: ['#4299e1', '#667eea', '#f6ad55', '#48bb78', '#9f7aea', '#ed8936'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Leads por Origem',
+                            font: { size: 18, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de Gargalo do Funil
+            const bottleneckData = {
+                'Leads p/ Oportunidades': funnelData.leadsToOpportunitiesRate,
+                'Oportunidades p/ Propostas': funnelData.opportunitiesToProposalsRate,
+                'Propostas p/ Vendas': funnelData.proposalsToSalesRate
+            };
+            
+            const labels = Object.keys(bottleneckData);
+            const data = Object.values(bottleneckData);
+            const backgroundColors = ['#f6ad55', '#e53e3e', '#ecc94b'];
+
+            charts.funnelBottleneck = new Chart(document.getElementById('funnelBottleneckChart'), {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Taxa de Conversão (%)',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Gargalo do Funil',
+                            font: { size: 18, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para calcular e renderizar o ranking de vendedores
+        function renderSalespersonRanking(filteredLeads, filteredConversion, goalsData) {
+            const rankingTableBody = document.getElementById('ranking-tabela');
+            rankingTableBody.innerHTML = '';
+            
+            const leadsResponsibles = filteredLeads.map(d => d['RESPONSAVEL']);
+            const conversionResponsibles = filteredConversion.map(d => d['RESPONSÁVEL']);
+            const sellers = [...new Set(leadsResponsibles.concat(conversionResponsibles))].filter(Boolean);
+
+            const sellerData = {};
+            
+            sellers.forEach(seller => {
+                sellerData[seller] = { leads: 0, opportunities: 0, proposals: 0, sales: 0, lost: 0, revenue: 0, lostRevenue: 0 };
+            });
+
+            filteredLeads.forEach(lead => {
+                if (sellerData[lead.RESPONSAVEL]) {
+                    sellerData[lead.RESPONSAVEL].leads++;
+                }
+            });
+
+            filteredConversion.forEach(conv => {
+                const responsible = conv.RESPONSÁVEL;
+                const valor = conv.VALOR_ESTIMADO ? parseFloat(conv.VALOR_ESTIMADO) : 0;
+                
+                if (sellerData[responsible]) {
+                    sellerData[responsible].opportunities += (conv.OPORTUNIDADE || 0);
+                    sellerData[responsible].proposals += (conv.PROPOSTA || 0);
+                    sellerData[responsible].sales += (conv.VENDA || 0);
+                    sellerData[responsible].lost += (conv.PERDIDO || 0);
+                    if (conv.VALOR_ESTIMADO) {
+                        if (conv.VENDA === 1) {
+                            sellerData[responsible].revenue += valor;
+                        } else if (conv.PERDIDO === 1) {
+                            sellerData[responsible].lostRevenue += valor;
+                        }
+                    }
+                }
+            });
+
+            const sellerRanking = Object.keys(sellerData).map(seller => {
+                const data = sellerData[seller];
+                const qualifRate = data.leads > 0 ? (data.opportunities / data.leads) * 100 : 0;
+                const proposalRate = data.opportunities > 0 ? (data.proposals / data.opportunities) * 100 : 0;
+                const salesRate = data.proposals > 0 ? (data.sales / data.proposals) * 100 : 0;
+                const lostRate = data.opportunities > 0 ? (data.lost / data.opportunities) * 100 : 0;
+                
+                let performance = 'Na Média';
+                if (qualifRate >= 60 && proposalRate >= 40 && salesRate >= 70) {
+                    performance = 'Desempenho Positivo';
+                } else if (qualifRate < 20 || proposalRate < 10 || salesRate < 5 || lostRate > 50) {
+                    performance = 'Desempenho Crítico';
+                }
+
+                return { seller, ...data, qualifRate, proposalRate, salesRate, lostRate, performance };
+            });
+
+            sellerRanking.sort((a, b) => b.sales - a.sales);
+
+            const numberOfSellersRow = goalsData.find(g => g[''] === 'NUMERO DE VENDEDORES ATUAIS');
+            const numberOfSellers = numberOfSellersRow ? parseFloat(numberOfSellersRow['LEADS']) : sellers.length;
+            
+            const totalLeadsInPeriod = filteredLeads.length;
+            const avgLeadsPerSeller = numberOfSellers > 0 ? totalLeadsInPeriod / numberOfSellers : 0;
+            
+            const dailySalesGoalRow = goalsData.find(g => g[''] === 'DIÁRIO');
+            const dailySalesGoal = dailySalesGoalRow ? parseFloat(dailySalesGoalRow['VENDAS']) : 0;
+            const dailyGoalPerSeller = numberOfSellers > 0 ? dailySalesGoal / numberOfSellers : 0;
+            
+            document.getElementById('avg-leads-per-seller').textContent = avgLeadsPerSeller.toFixed(0);
+            document.getElementById('daily-sales-goal-per-seller').textContent = dailyGoalPerSeller.toFixed(2);
+
+            sellerRanking.forEach(s => {
+                const tr = document.createElement('tr');
+                let performanceColor = '';
+                if (s.performance === 'Desempenho Positivo') performanceColor = 'bg-green-100 text-green-800';
+                else if (s.performance === 'Desempenho Crítico') performanceColor = 'bg-red-100 text-red-800';
+                else performanceColor = 'bg-yellow-100 text-yellow-800';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.seller}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.leads}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.sales}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.qualifRate.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.proposalRate.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.salesRate.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">R$ ${s.revenue.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">R$ ${s.lostRevenue.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.lostRate.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold ${performanceColor} rounded-full">${s.performance}</td>
+                `;
+                rankingTableBody.appendChild(tr);
+            });
+        }
+
+        // Função para comparar o desempenho atual com as metas
+        function renderMetaComparison(funnelData, goalsData, startDate, endDate) {
+            const comparisonContainer = document.getElementById('meta-comparison');
+            comparisonContainer.innerHTML = '';
+
+            // Cálculos para o período selecionado
+            const numDays = (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) + 1;
+            let periodGoal;
+            if (numDays <= 7) {
+                periodGoal = goalsData.find(g => g[''] === 'SEMANAL');
+            } else if (numDays <= 31) {
+                periodGoal = goalsData.find(g => g[''] === 'MENSAL');
+            } else {
+                periodGoal = goalsData.find(g => g[''] === 'ANUAL');
+            }
+            
+            if (!periodGoal) {
+                comparisonContainer.innerHTML = '<p class="text-gray-500">Não foi possível encontrar metas para o período selecionado.</p>';
+                return;
+            }
+
+            const currentOpportunities = funnelData.totalOpportunities;
+            const currentProposals = funnelData.totalProposals;
+            const currentSales = funnelData.totalSales;
+
+            const opportunitiesVsGoal = (currentOpportunities / parseFloat(periodGoal.OPORTUNIDADES)) * 100;
+            const proposalsVsGoal = (currentProposals / parseFloat(periodGoal.PROPOSTA)) * 100;
+            const salesVsGoal = (currentSales / parseFloat(periodGoal.VENDAS)) * 100;
+
+            const oppStatus = opportunitiesVsGoal >= 100 ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            const propStatus = proposalsVsGoal >= 100 ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            const salesStatus = salesVsGoal >= 100 ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            
+            // Cálculos para a meta anual (independente do período)
+            const annualGoalRow = goalsData.find(g => g[''] === 'ANUAL');
+            const annualGoalSales = annualGoalRow ? parseFloat(annualGoalRow.VENDAS) : 0;
+            const allSalesUpToDate = conversionData.filter(d => d.VENDA === 1).length;
+            const salesVsAnnualGoal = (annualGoalSales > 0) ? (allSalesUpToDate / annualGoalSales) * 100 : 0;
+            let progressColor = salesVsAnnualGoal >= 100 ? 'bg-green-500' : (salesVsAnnualGoal >= 70 ? 'bg-yellow-500' : 'bg-red-500');
+
+
+            comparisonContainer.innerHTML = `
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Oportunidades:</p>
+                    <p class="text-3xl font-bold mt-1">${currentOpportunities} / ${parseFloat(periodGoal.OPORTUNIDADES).toFixed(0)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${oppStatus} (${opportunitiesVsGoal.toFixed(1)}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Propostas:</p>
+                    <p class="text-3xl font-bold mt-1">${currentProposals} / ${parseFloat(periodGoal.PROPOSTA).toFixed(0)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${propStatus} (${proposalsVsGoal.toFixed(1)}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Vendas:</p>
+                    <p class="text-3xl font-bold mt-1">${currentSales} / ${parseFloat(periodGoal.VENDAS).toFixed(0)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${salesStatus} (${salesVsGoal.toFixed(1)}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md sm:col-span-3 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Progresso da Meta Anual de Vendas:</p>
+                    <div class="w-full bg-gray-300 rounded-full h-4 mt-2">
+                        <div class="${progressColor} h-4 rounded-full transition-all duration-500" style="width: ${salesVsAnnualGoal.toFixed(1)}%;"></div>
+                    </div>
+                    <p class="text-3xl font-bold mt-2">${salesVsAnnualGoal.toFixed(1)}%</p>
+                </div>
+            `;
+        }
+        
+        // Função para renderizar a tabela de metas
+        function renderGoalsTable(goalsData) {
+            const metasTableBody = document.getElementById('metas-tabela');
+            metasTableBody.innerHTML = '';
+            
+            const orderedPeriods = ['ANUAL', 'MENSAL', 'SEMANAL', 'DIÁRIO'];
+            orderedPeriods.forEach(period => {
+                const rowData = goalsData.find(g => g[''] === period);
+                if (rowData) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rowData['']}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${parseFloat(rowData['LEADS']).toFixed(0)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${parseFloat(rowData['OPORTUNIDADES']).toFixed(0)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${parseFloat(rowData['PROPOSTA']).toFixed(0)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${parseFloat(rowData['VENDAS']).toFixed(0)}</td>
+                    `;
+                    metasTableBody.appendChild(tr);
+                }
+            });
+        }
+
+        // Análise anual de desempenho e metas
+        function generateAnnualAnalysis(conversionData, endDate, goalsData) {
+            const annualGoal = parseFloat(goalsData.find(g => g[''] === 'ANUAL').VENDAS);
+            const currentYear = new Date(endDate).getFullYear();
+            const startOfYear = new Date(currentYear, 0, 1);
+            
+            const salesUpToDate = conversionData.filter(d => {
+                const dateParts = d.DATA.split(/[-/]/);
+                const itemDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                return d.VENDA === 1 && itemDate >= startOfYear && itemDate <= new Date(endDate);
+            }).length;
+
+            const daysPassed = (new Date(endDate) - startOfYear) / (1000 * 60 * 60 * 24);
+            const totalDaysInYear = (new Date(currentYear, 11, 31) - new Date(currentYear, 0, 1)) / (1000 * 60 * 60 * 24);
+            const projectedSales = (daysPassed > 0) ? (salesUpToDate / daysPassed) * totalDaysInYear : 0;
+            const performanceVsGoal = (annualGoal > 0) ? (projectedSales / annualGoal) * 100 : 0;
+
+            let analysisText = "";
+            let recommendationText = "";
+            let requiredSales = (annualGoal - salesUpToDate);
+            let remainingMonths = (12 - new Date(endDate).getMonth());
+
+            if (performanceVsGoal >= 90) {
+                analysisText = `Excelente! O desempenho de vendas até o momento está ${performanceVsGoal.toFixed(1)}% alinhado com a meta anual. Isso indica que a equipe está no caminho certo para atingir e até mesmo superar o objetivo de ${annualGoal} vendas.`;
+                recommendationText = `Mantenham o ritmo e a excelência. Para continuar neste caminho, sugiro focar na otimização dos canais de maior conversão e investir em programas de fidelização de clientes.`;
+            } else if (performanceVsGoal >= 70 && performanceVsGoal < 90) {
+                analysisText = `O desempenho está na média, com ${performanceVsGoal.toFixed(1)}% do caminho para a meta anual. É um bom resultado, mas exige um esforço contínuo para não perder o ritmo e garantir o atingimento da meta de ${annualGoal} vendas.`;
+                recommendationText = `A equipe está em uma posição sólida, mas há espaço para crescimento. As recomendações para impulsionar o resultado incluem: Aumentar a taxa de conversão em oportunidades, ter um follow-up mais assertivo e estratégias para quebrar objeções finais do cliente.`;
+            } else {
+                let salesPerMonth = remainingMonths > 0 ? requiredSales / remainingMonths : requiredSales;
+                analysisText = `Atenção! O desempenho atual está abaixo do esperado, com ${performanceVsGoal.toFixed(1)}% da meta anual atingida. Para reverter o quadro e alcançar o objetivo de ${annualGoal} vendas, é necessário recalibrar a estratégia. Serão necessárias cerca de ${salesPerMonth.toFixed(0)} vendas por mês para bater a meta.`;
+                recommendationText = `É hora de um novo plano de ação. As principais recomendações incluem:
+                <ul>
+                    <li><strong>Melhorar a qualificação de leads:</strong> Revise o script de abordagem para garantir que os leads qualificados sejam prioritários.</li>
+                    <li><strong>Aumentar a taxa de conversão em propostas:</strong> Foque em treinamento de negociação e no aprimoramento da proposta de valor.</li>
+                    <li><strong>Estratégia de remarketing:</strong> Considere uma campanha de remarketing para reengajar leads perdidos ou que ainda não tomaram uma decisão.</li>
+                    <li><strong>Follow-up mais estruturado:</strong> Garanta que a equipe esteja fazendo follow-up de forma consistente e com mensagens personalizadas.</li>
+                </ul>`;
+            }
+            
+            return `${analysisText}<br><br><strong>Recomendações:</strong><br>${recommendationText}`;
+        }
+        
+        // Função para calcular o ticket médio
+        function calculateTicketMedio(filteredConversion, goalsData) {
+            const annualRevenueGoal = parseFloat(goalsData.find(g => g[''] === 'ANUAL').VALOR_ESTIMADO);
+            const annualSalesGoal = parseFloat(goalsData.find(g => g[''] === 'ANUAL').VENDAS);
+            const projectedTicketMedio = annualSalesGoal > 0 ? annualRevenueGoal / annualSalesGoal : 0;
+            
+            const totalSales = filteredConversion.filter(d => d.VENDA === 1);
+            const totalSalesValue = totalSales.reduce((sum, item) => sum + (item.VALOR_ESTIMADO || 0), 0);
+            const realizedTicketMedio = totalSales.length > 0 ? totalSalesValue / totalSales.length : 0;
+
+            const lostOpportunities = filteredConversion.filter(d => d.PERDIDO === 1);
+            const lostValue = lostOpportunities.reduce((sum, item) => sum + (item.VALOR_ESTIMADO || 0), 0);
+
+            return { projectedTicketMedio, realizedTicketMedio, lostValue };
+        }
+        
+        // Função principal para atualizar o dashboard
+        function updateDashboard() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // Filtrar os dados
+            const filteredLeads = filterDataByDate(leadsData, 'DATA', startDate, endDate);
+            const filteredConversion = filterDataByDate(conversionData, 'DATA', startDate, endDate);
+            
+            // Recalcular e renderizar tudo
+            const sourceKPIs = calculateSourceKPIs(filteredLeads);
+            const funnelKPIs = calculateFunnelKPIs(filteredLeads, filteredConversion);
+            const { projectedTicketMedio, realizedTicketMedio, lostValue } = calculateTicketMedio(filteredConversion, goalsData);
+            
+            renderKPIs(sourceKPIs, funnelKPIs);
+            document.getElementById('funnel-analysis-text').innerHTML = generateFunnelAnalysis(funnelKPIs);
+            renderCharts(filteredLeads, filteredConversion, funnelKPIs);
+            renderSalespersonRanking(filteredLeads, filteredConversion, goalsData);
+            document.getElementById('annual-analysis-text').innerHTML = generateAnnualAnalysis(conversionData, endDate, goalsData);
+            renderMetaComparison(funnelKPIs, goalsData, startDate, endDate);
+
+            // Renderizar novos cards de projeção de ticket médio
+            document.getElementById('ticket-medio-proj').textContent = `R$ ${projectedTicketMedio.toFixed(2)}`;
+            document.getElementById('ticket-medio-realizado').textContent = `R$ ${realizedTicketMedio.toFixed(2)}`;
+            document.getElementById('negocios-perdidos-valor').textContent = `R$ ${lostValue.toFixed(2)}`;
+        }
+
+        // Executar tudo quando o DOM estiver carregado
+        window.addEventListener('load', () => {
+            leadsData = parseCSV(rawLeadsData);
+            conversionData = parseCSV(rawConversionData);
+            goalsData = parseCSV(rawGoalsData);
+            
+            // Definir datas iniciais padrão
+            const today = new Date();
+            const lastMonth = new Date(today);
+            lastMonth.setDate(today.getDate() - 30);
+            
+            const formatDate = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
+
+            document.getElementById('startDate').value = formatDate(lastMonth);
+            document.getElementById('endDate').value = formatDate(today);
+            
+            renderGoalsTable(goalsData);
+            updateDashboard();
+
+            document.getElementById('filterBtn').addEventListener('click', updateDashboard);
+        });
+    </script>
+</body>
+</html>
