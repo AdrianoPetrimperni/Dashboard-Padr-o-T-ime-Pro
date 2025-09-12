@@ -1,209 +1,764 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Marketing x Vendas</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f4f7f9;
-    }
-    .metric-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .metric-card:hover { transform: translateY(-5px); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Marketing x Vendas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .chart-container, .analysis-container, .table-container {
+            @apply bg-white p-6 rounded-xl shadow-md;
+        }
+        .metric-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            @apply shadow-lg;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            @apply shadow-xl;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        .icon-container {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        /* Definição de cores para as barras de progresso do funil */
+        .progress-bar-leads {
+            background-color: #9ca3af; /* gray-400 */
+        }
+        .progress-bar-opportunities {
+            background-color: #f59e0b; /* amber-500 */
+        }
+        .progress-bar-proposals {
+            background-color: #ea580c; /* orange-600 */
+        }
+        .progress-bar-sales {
+            background-color: #16a34a; /* green-600 */
+        }
+        .progress-bar-lost {
+            background-color: #dc2626; /* red-600 */
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #16a34a;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </head>
 <body class="p-8">
 
-  <div class="max-w-7xl mx-auto">
-    <!-- Cabeçalho -->
-    <div class="bg-white p-4 rounded-xl shadow-md flex flex-col lg:flex-row items-center justify-between mb-8">
-      <div class="flex items-center space-x-4">
-        <img src="https://cdn.wts.chat/static/partners/app.taime.pro/logo-text.svg" alt="Logo Táime" class="h-10">
-        <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Dashboard Marketing x Vendas</h1>
-      </div>
-      <div class="flex flex-col md:flex-row items-center space-x-4">
-        <div>
-          <label for="startDate" class="text-sm font-medium text-gray-700">Início</label>
-          <input type="date" id="startDate" class="mt-1 rounded-md border-gray-300 shadow-sm">
+    <div class="max-w-7xl mx-auto">
+        <!-- Cabeçalho Centralizado com filtro em linha -->
+        <div class="bg-white p-4 rounded-xl shadow-md flex flex-col lg:flex-row items-center justify-between mb-8">
+            <div class="flex flex-col md:flex-row items-center text-center md:text-left mb-4 md:mb-0 space-y-2 md:space-y-0 md:space-x-4">
+                <img src="https://cdn.wts.chat/static/partners/app.taime.pro/logo-text.svg" alt="Logo Táime" class="h-10">
+                <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Dashboard Marketing x Vendas</h1>
+            </div>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex flex-col items-center">
+                    <label for="startDate" class="text-sm font-medium text-gray-700">Data de Início</label>
+                    <input type="date" id="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex flex-col items-center">
+                    <label for="endDate" class="text-sm font-medium text-gray-700">Data de Fim</label>
+                    <input type="date" id="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <button id="filterBtn" class="mt-4 md:mt-0 px-6 py-2 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors">Filtrar</button>
+            </div>
         </div>
-        <div>
-          <label for="endDate" class="text-sm font-medium text-gray-700">Fim</label>
-          <input type="date" id="endDate" class="mt-1 rounded-md border-gray-300 shadow-sm">
+
+        <div id="loading" class="flex justify-center items-center h-48">
+            <div class="spinner"></div>
+            <p class="ml-4 text-lg text-gray-700">Carregando dados...</p>
         </div>
-        <button id="filterBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700">Filtrar</button>
-      </div>
+
+        <div id="dashboard-content" class="hidden">
+            <!-- Total de Leads por Canal -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                    <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                        Total de Leads por Canal
+                    </span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    <!-- Google Ads -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-google">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-google-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <div class="icon-container">
+                                <img src="https://cdn4.iconfinder.com/data/icons/logos-brands-7/512/google_ads-512.png" alt="Logo Google Ads">
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Google Ads</h3>
+                        </div>
+                    </div>
+                    <!-- Meta Ads -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-meta">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-meta-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <div class="icon-container">
+                                <img src="https://cdn-icons-png.flaticon.com/128/6033/6033716.png" alt="Logo Meta Ads">
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Meta Ads</h3>
+                        </div>
+                    </div>
+                    <!-- Prospecção -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-prospeccao">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-prospeccao-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <div class="icon-container" style="width: 32px; height: 32px;">
+                                <img src="https://static.vecteezy.com/system/resources/previews/018/930/564/non_2x/whatsapp-logo-whatsapp-icon-whatsapp-transparent-free-png.png" alt="Logo WhatsApp">
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Prospecção</h3>
+                        </div>
+                    </div>
+                    <!-- Indicação -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-indicacao">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-indicacao-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <span role="img" aria-label="Indicação">🤝</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Indicação</h3>
+                        </div>
+                    </div>
+                    <!-- Orgânicas -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-organico">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-organico-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <span role="img" aria-label="Orgânicas">🌱</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Orgânicas</h3>
+                        </div>
+                    </div>
+                    <!-- Sem Origem -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800 pulse-animation" id="kpi-semorigem">0</div>
+                            <div class="text-sm text-gray-600 font-medium mt-1"><span id="kpi-semorigem-rate">0%</span> do total</div>
+                        </div>
+                        <div class="mb-4 flex items-center justify-center gap-2">
+                            <span role="img" aria-label="Sem Origem">❓</span>
+                            <h3 class="text-lg font-semibold text-gray-800">Sem Origem</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-12">
+
+            <!-- Seção 2: KPIs por Etapa do Funil -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                    <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                        Desempenho por Etapa do Funil
+                    </span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+                    <!-- Leads -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800" id="kpi-leads">0</div>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Leads</h3>
+                            <div class="w-full bg-gray-100 rounded-full h-3">
+                                <div class="progress-bar-leads h-3 rounded-full" id="progress-leads"></div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 text-center">
+                            <span class="font-medium">Total de Leads</span>
+                        </div>
+                    </div>
+                    <!-- Oportunidades -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800" id="kpi-oportunidades">0</div>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Oportunidades</h3>
+                            <div class="w-full bg-gray-100 rounded-full h-3">
+                                <div class="progress-bar-opportunities h-3 rounded-full" id="progress-oportunidades"></div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 text-center">
+                            <span class="font-medium text-amber-600" id="opportunities-rate">0%</span> de conversão
+                        </div>
+                    </div>
+                    <!-- Propostas -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800" id="kpi-propostas">0</div>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Propostas</h3>
+                            <div class="w-full bg-gray-100 rounded-full h-3">
+                                <div class="progress-bar-proposals h-3 rounded-full" id="progress-propostas"></div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 text-center">
+                            <span class="font-medium text-orange-600" id="proposals-rate">0%</span> de conversão
+                        </div>
+                    </div>
+                    <!-- Vendas -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800" id="kpi-vendas">0</div>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Vendas</h3>
+                            <div class="w-full bg-gray-100 rounded-full h-3">
+                                <div class="progress-bar-sales h-3 rounded-full" id="progress-vendas"></div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 text-center">
+                            <span class="font-medium text-green-600" id="sales-rate">0%</span> de conversão
+                        </div>
+                    </div>
+                    <!-- Perdidos -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl font-bold text-gray-800" id="kpi-perdidos">0</div>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 text-center">Perdidos</h3>
+                            <div class="w-full bg-gray-100 rounded-full h-3">
+                                <div class="progress-bar-lost h-3 rounded-full" id="progress-perdidos"></div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 text-center">
+                            <span class="font-medium text-red-600" id="lost-rate">0%</span> de conversão
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análise de Funil -->
+            <div class="analysis-container mb-12">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Análise de Funil</h2>
+                <p id="funnel-analysis-text" class="text-gray-600 leading-relaxed"></p>
+            </div>
+
+            <hr class="my-12">
+
+            <!-- Seção de Metas (Geral) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                <div class="table-container flex-grow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Metas de Conversão</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Oportunidades</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Propostas</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="metas-tabela" class="bg-white divide-y divide-gray-200">
+                                <!-- Linhas da tabela de metas serão injetadas aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="flex-grow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Comparativo de Meta (Período Selecionado)</h2>
+                    <div id="meta-comparison" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <!-- Conteúdo do comparativo de meta será injetado aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-12">
+            <!-- Nova Seção para Projeção e Análise Financeira -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                    <span class="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                        Projeção e Análise Financeira
+                    </span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Card Projeção Ticket Médio -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <p class="text-sm font-semibold text-gray-600">Ticket Médio Projetado</p>
+                            <p id="ticket-medio-proj" class="text-3xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <!-- Novo Card Ticket Médio Realizado -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <p class="text-sm font-semibold text-gray-600">Ticket Médio Realizado</p>
+                            <p id="ticket-medio-realizado" class="text-3xl font-bold text-indigo-600 mt-1">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <!-- Card Receita Realizada -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <p class="text-sm font-semibold text-gray-600">Receita Realizada</p>
+                            <p id="receita-realizada" class="text-3xl font-bold text-green-800 mt-1">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <!-- Card Negócios Perdidos -->
+                    <div class="metric-card bg-white rounded-2xl p-6 hover-lift">
+                        <div class="text-center mb-4">
+                            <p class="text-sm font-semibold text-gray-600">Valor Perdido</p>
+                            <p id="negocios-perdidos-valor" class="text-3xl font-bold text-red-600 mt-1">R$ 0,00</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-12">
+            <!-- Seção de Análise e Ranking por Vendedor -->
+            <div class="table-container mb-12">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Análise e Ranking por Vendedor</h2>
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="bg-indigo-100 p-4 rounded-xl flex-grow text-center">
+                        <p class="text-sm font-semibold text-indigo-800">Média de Leads por Vendedor no Período:</p>
+                        <p id="avg-leads-per-seller" class="text-3xl font-bold text-indigo-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-indigo-100 p-4 rounded-xl flex-grow text-center">
+                        <p class="text-sm font-semibold text-indigo-800">Meta de vendas no periódo por vendedor:</p>
+                        <p id="daily-sales-goal-per-seller" class="text-3xl font-bold text-indigo-600 mt-1">0</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Leads</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Vendas</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Qualificação</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Proposta</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Vendas</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Perdidos</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Receita de Vendas</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Perdidos em Reais</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Desempenho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-tabela" class="bg-white divide-y divide-gray-200">
+                            <!-- Linhas da tabela de ranking serão injetadas aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <hr class="my-12">
+
+            <!-- Análise Anual -->
+            <div class="analysis-container mb-12">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Recomendações e Metas Anuais</h2>
+                <p id="annual-analysis-text" class="text-gray-600 leading-relaxed"></p>
+            </div>
+
+            <hr class="my-12">
+
+            <!-- Seção de Gráficos -->
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Visualização de Dados</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="chart-container">
+                    <canvas id="leadsByOriginChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="funnelBottleneckChart"></canvas>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Cards de Leads -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-GOOGLE" class="text-4xl font-bold">0</div><p>Google Ads</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-META" class="text-4xl font-bold">0</div><p>Meta Ads</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-PROSPECÇÃO" class="text-4xl font-bold">0</div><p>Prospecção</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-INDICAÇÃO" class="text-4xl font-bold">0</div><p>Indicação</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-ORGÂNICO" class="text-4xl font-bold">0</div><p>Orgânico</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-SEM_ORIGEM" class="text-4xl font-bold">0</div><p>Sem Origem</p></div>
-    </div>
+    <script>
+        // Importante: Substitua esta URL pela URL de Implantação do seu Apps Script
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxj9vYDvCiv3He0bZeihQt8_kMkPioqjRYxoqCu1L3m68L4sFeCD7eURRY2hODCyqbvaA/exec';
+        
+        let dashboardData, charts = {};
 
-    <hr class="my-12">
+        // Função para formatar números no padrão brasileiro
+        const formatBRL = (value) => {
+            const numericValue = parseFloat(value);
+            if (isNaN(numericValue) || numericValue === 0) {
+                return '0,00';
+            }
+            return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numericValue);
+        };
+        
+        const formatInteger = (value) => {
+            const numericValue = parseInt(value);
+            if (isNaN(numericValue)) {
+                return '0';
+            }
+            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(numericValue);
+        };
 
-    <!-- Funil -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-leads" class="text-4xl font-bold">0</div><p>Leads</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-oportunidades" class="text-4xl font-bold">0</div><p>Oportunidades</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-propostas" class="text-4xl font-bold">0</div><p>Propostas</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-vendas" class="text-4xl font-bold">0</div><p>Vendas</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><div id="kpi-perdidos" class="text-4xl font-bold">0</div><p>Perdidos</p></div>
-    </div>
+        // Função para buscar os dados da planilha via Apps Script com filtro de data
+        async function fetchDashboardData(startDate, endDate) {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('dashboard-content').classList.add('hidden');
 
-    <!-- Metas -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-      <div>
-        <h2 class="text-xl font-semibold mb-4 text-center">Metas de Conversão</h2>
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead><tr><th>Período</th><th>Leads</th><th>Oportunidades</th><th>Propostas</th><th>Vendas</th></tr></thead>
-          <tbody id="metas-tabela"></tbody>
-        </table>
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold mb-4 text-center">Comparativo de Meta</h2>
-        <div id="meta-comparison" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-      </div>
-    </div>
+            try {
+                const url = new URL(APPS_SCRIPT_URL);
+                if (startDate && endDate) {
+                    url.searchParams.append('startDate', startDate);
+                    url.searchParams.append('endDate', endDate);
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                dashboardData = await response.json();
 
-    <!-- Financeiro -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><p>Ticket Médio Projetado</p><p id="ticket-medio-proj" class="text-3xl font-bold">R$ 0,00</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><p>Ticket Médio Realizado</p><p id="ticket-medio-realizado" class="text-3xl font-bold">R$ 0,00</p></div>
-      <div class="metric-card bg-white rounded-2xl p-6 text-center"><p>Negócios Perdidos</p><p id="negocios-perdidos-valor" class="text-3xl font-bold text-red-600">R$ 0,00</p></div>
-    </div>
+                if (!dashboardData.success) {
+                    throw new Error(`Erro do Apps Script: ${dashboardData.error}`);
+                }
+                
+            } catch (error) {
+                console.error("Falha ao buscar dados:", error);
+                document.getElementById('dashboard-content').innerHTML = `
+                    <div class="text-center p-8 bg-red-100 text-red-700 rounded-xl">
+                        <p class="font-bold">Erro ao carregar os dados.</p>
+                        <p class="mt-2 text-sm">Verifique se o Apps Script foi implantado corretamente e se as abas da planilha têm os nomes corretos.</p>
+                        <p class="mt-2 text-sm">Detalhes do erro: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('dashboard-content').classList.remove('hidden');
+            }
+        }
 
-    <!-- Ranking -->
-    <h2 class="text-xl font-semibold mb-4">Ranking por Vendedor</h2>
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead><tr><th>Vendedor</th><th>Leads</th><th>Vendas</th><th>% Qualificação</th><th>% Proposta</th><th>% Vendas</th><th>Receita</th><th>Perdidos</th></tr></thead>
-      <tbody id="ranking-tabela"></tbody>
-    </table>
+        // Função principal para atualizar o dashboard
+        async function updateDashboard() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            await fetchDashboardData(startDate, endDate);
+            
+            if (dashboardData && dashboardData.success) {
+                const data = dashboardData.data;
+                const isFiltered = !!(startDate && endDate);
 
-    <!-- Gráficos -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-12">
-      <canvas id="leadsByOriginChart"></canvas>
-      <canvas id="funnelBottleneckChart"></canvas>
-    </div>
-  </div>
+                if (isFiltered) {
+                    // Renderizar KPIs por canal
+                    renderSourceKPIs(data.totaisPorCanal);
+                    
+                    // Renderizar KPIs do funil
+                    renderFunnelKPIs(data.desempenhoFunil);
 
-  <script>
-    async function fetchKpis() {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      const url = `https://script.google.com/macros/s/AKfycbysDxi0zvWMXiowSwKWlJwCLQZ6fwihPWDdLScbDMeozT7CP9EZpBKnpAV0PRYE_hGug/exec?startDate=${startDate}&endDate=${endDate}`;
+                    // Renderizar análises
+                    document.getElementById('funnel-analysis-text').innerHTML = data.analiseFunil;
+                    document.getElementById('annual-analysis-text').innerHTML = data.analiseAnual;
 
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
+                    // Renderizar financeiro
+                    const totalVendas = data.desempenhoFunil.vendas;
+                    const receitaRealizada = parseFloat(data.financeiro.vendasRealizadas);
+                    const ticketMedioRealizado = totalVendas > 0 ? (receitaRealizada / totalVendas) : 0;
+                    
+                    document.getElementById('ticket-medio-proj').textContent = `R$ ${formatBRL(data.metas.ticket_medio.valorEstimado)}`;
+                    document.getElementById('ticket-medio-realizado').textContent = `R$ ${formatBRL(ticketMedioRealizado)}`;
+                    document.getElementById('receita-realizada').textContent = `R$ ${formatBRL(receitaRealizada)}`;
+                    document.getElementById('negocios-perdidos-valor').textContent = `R$ ${formatBRL(data.financeiro.negociosPerdidos)}`;
 
-        // Totais por canal
-        document.getElementById('kpi-GOOGLE').textContent = data.totaisPorCanal.googleAds;
-        document.getElementById('kpi-META').textContent = data.totaisPorCanal.metaAds;
-        document.getElementById('kpi-PROSPECÇÃO').textContent = data.totaisPorCanal.prospeccao;
-        document.getElementById('kpi-INDICAÇÃO').textContent = data.totaisPorCanal.indicacao;
-        document.getElementById('kpi-ORGÂNICO').textContent = data.totaisPorCanal.organicas;
-        document.getElementById('kpi-SEM_ORIGEM').textContent = data.totaisPorCanal.semOrigem;
+                    // Renderizar tabelas e comparações
+                    renderGoalsTable(data.metas);
+                    renderMetaComparison(data.comparativoMeta, data.progressoMetaAnual.percentual);
+                    renderSalespersonRanking(data.rankingVendedores, data.avgLeadsPerSeller, data.dailySalesGoalPerSeller);
+                    
+                    // Renderizar gráficos
+                    renderCharts(data.leadsPorOrigem, data.gargaloFunil);
+                } else {
+                    // Zerar o dashboard
+                    resetDashboard();
 
-        // Funil
-        document.getElementById('kpi-leads').textContent = data.desempenhoFunil.leads;
-        document.getElementById('kpi-oportunidades').textContent = data.desempenhoFunil.oportunidades;
-        document.getElementById('kpi-propostas').textContent = data.desempenhoFunil.propostas;
-        document.getElementById('kpi-vendas').textContent = data.desempenhoFunil.vendas;
-        document.getElementById('kpi-perdidos').textContent = data.desempenhoFunil.perdidos;
+                    // Manter os valores de meta e ticket projetado
+                    const metasData = data.metas;
+                    const ticketProjetado = metasData.ticket_medio ? metasData.ticket_medio.valorEstimado : 0;
+                    const dailySalesGoalPerSeller = data.dailySalesGoalPerSeller;
 
-        // Metas tabela
-        const metasTable = document.getElementById('metas-tabela');
-        metasTable.innerHTML = `
-          <tr><td>Diário</td><td>${data.metas.diario.leads}</td><td>${data.metas.diario.oportunidades}</td><td>${data.metas.diario.propostas}</td><td>${data.metas.diario.vendas}</td></tr>
-          <tr><td>Semanal</td><td>${data.metas.semanal.leads}</td><td>${data.metas.semanal.oportunidades}</td><td>${data.metas.semanal.propostas}</td><td>${data.metas.semanal.vendas}</td></tr>
-          <tr><td>Mensal</td><td>${data.metas.mensal.leads}</td><td>${data.metas.mensal.oportunidades}</td><td>${data.metas.mensal.propostas}</td><td>${data.metas.mensal.vendas}</td></tr>
-          <tr><td>Anual</td><td>${data.metas.anual.leads}</td><td>${data.metas.anual.oportunidades}</td><td>${data.metas.anual.propostas}</td><td>${data.metas.anual.vendas}</td></tr>
-        `;
+                    document.getElementById('ticket-medio-proj').textContent = `R$ ${formatBRL(ticketProjetado)}`;
+                    document.getElementById('daily-sales-goal-per-seller').textContent = formatInteger(dailySalesGoalPerSeller);
+                    renderGoalsTable(metasData);
+                }
+            }
+        }
 
-        // Comparativo meta
-        document.getElementById('meta-comparison').innerHTML = `
-          <div class="bg-white p-4 rounded shadow">Oportunidades: ${data.comparativoMeta.oportunidades} / ${data.comparativoMeta.metaOportunidades}</div>
-          <div class="bg-white p-4 rounded shadow">Propostas: ${data.comparativoMeta.propostas} / ${data.comparativoMeta.metaPropostas}</div>
-          <div class="bg-white p-4 rounded shadow">Vendas: ${data.comparativoMeta.vendas} / ${data.comparativoMeta.metaVendas}</div>
-        `;
+        function resetDashboard() {
+            // Zera todos os cards de KPI
+            const kpiElements = document.querySelectorAll('[id^="kpi-"]');
+            kpiElements.forEach(el => el.textContent = '0');
+            const rateElements = document.querySelectorAll('[id$="-rate"]');
+            rateElements.forEach(el => el.textContent = '0%');
+            const progressBars = document.querySelectorAll('[id^="progress-"]');
+            progressBars.forEach(el => el.style.width = '0%');
 
-        // Financeiro
-        document.getElementById('ticket-medio-proj').textContent = `R$ ${data.financeiro.ticketProjetado}`;
-        document.getElementById('ticket-medio-realizado').textContent = `R$ ${data.financeiro.ticketRealizado}`;
-        document.getElementById('negocios-perdidos-valor').textContent = `R$ ${data.financeiro.negociosPerdidos}`;
+            // Zera a seção de análise e financeiro
+            document.getElementById('funnel-analysis-text').innerHTML = 'Selecione um período para ver a análise de funil.';
+            document.getElementById('annual-analysis-text').innerHTML = 'Selecione um período para ver as recomendações e metas anuais.';
+            document.getElementById('ticket-medio-realizado').textContent = 'R$ 0,00';
+            document.getElementById('receita-realizada').textContent = 'R$ 0,00';
+            document.getElementById('negocios-perdidos-valor').textContent = 'R$ 0,00';
+            document.getElementById('avg-leads-per-seller').textContent = '0';
+            
+            // Zera as tabelas e gráficos
+            document.getElementById('ranking-tabela').innerHTML = '';
+            document.getElementById('meta-comparison').innerHTML = '';
+            if (charts.leadsByOrigin) charts.leadsByOrigin.destroy();
+            if (charts.funnelBottleneck) charts.funnelBottleneck.destroy();
+        }
 
-        // Ranking vendedores
-        const rankingTable = document.getElementById('ranking-tabela');
-        rankingTable.innerHTML = "";
-        data.rankingVendedores.forEach(v => {
-          rankingTable.innerHTML += `
-            <tr>
-              <td>${v.nome}</td>
-              <td>${v.totalLeads}</td>
-              <td>${v.totalVendas}</td>
-              <td>${v.percentualQualificacao}</td>
-              <td>${v.percentualProposta}</td>
-              <td>${v.percentualVenda}</td>
-              <td>R$ ${v.receitaVendas}</td>
-              <td>R$ ${v.perdidosReais}</td>
-            </tr>
-          `;
+        function renderSourceKPIs(sourceKPIs) {
+            document.getElementById('kpi-google').textContent = sourceKPIs.google;
+            document.getElementById('kpi-google-rate').textContent = sourceKPIs.percentuais.google;
+            document.getElementById('kpi-meta').textContent = sourceKPIs.meta;
+            document.getElementById('kpi-meta-rate').textContent = sourceKPIs.percentuais.meta;
+            document.getElementById('kpi-prospeccao').textContent = sourceKPIs.prospeccao;
+            document.getElementById('kpi-prospeccao-rate').textContent = sourceKPIs.percentuais.prospeccao;
+            document.getElementById('kpi-indicacao').textContent = sourceKPIs.indicacao;
+            document.getElementById('kpi-indicacao-rate').textContent = sourceKPIs.percentuais.indicacao;
+            document.getElementById('kpi-organico').textContent = sourceKPIs.organico;
+            document.getElementById('kpi-organico-rate').textContent = sourceKPIs.percentuais.organico;
+            document.getElementById('kpi-semorigem').textContent = sourceKPIs.semorigem;
+            document.getElementById('kpi-semorigem-rate').textContent = sourceKPIs.percentuais.semorigem;
+        }
+
+        function renderFunnelKPIs(funnelKPIs) {
+            document.getElementById('kpi-leads').textContent = funnelKPIs.leads;
+            document.getElementById('kpi-oportunidades').textContent = funnelKPIs.oportunidades;
+            document.getElementById('kpi-propostas').textContent = funnelKPIs.propostas;
+            document.getElementById('kpi-vendas').textContent = funnelKPIs.vendas;
+            document.getElementById('kpi-perdidos').textContent = funnelKPIs.perdidos;
+
+            document.getElementById('opportunities-rate').textContent = funnelKPIs.taxas.oportunidades;
+            document.getElementById('proposals-rate').textContent = funnelKPIs.taxas.propostas;
+            document.getElementById('sales-rate').textContent = funnelKPIs.taxas.vendas;
+            document.getElementById('lost-rate').textContent = funnelKPIs.taxas.perdidos;
+
+            // Set progress bar widths for Funnel KPIs
+            const funnelProgress = {
+                leads: 100,
+                oportunidades: Math.min(100, parseFloat(funnelKPIs.taxas.oportunidades)),
+                propostas: Math.min(100, parseFloat(funnelKPIs.taxas.propostas)),
+                vendas: Math.min(100, parseFloat(funnelKPIs.taxas.vendas)),
+                perdidos: Math.min(100, parseFloat(funnelKPIs.taxas.perdidos)),
+            };
+
+            document.getElementById('progress-leads').style.width = funnelProgress.leads + '%';
+            document.getElementById('progress-oportunidades').style.width = funnelProgress.oportunidades + '%';
+            document.getElementById('progress-propostas').style.width = funnelProgress.propostas + '%';
+            document.getElementById('progress-vendas').style.width = funnelProgress.vendas + '%';
+            document.getElementById('progress-perdidos').style.width = funnelProgress.perdidos + '%';
+        }
+        
+        function renderCharts(leadsByOriginData, funnelBottleneckData) {
+            if (charts.leadsByOrigin) charts.leadsByOrigin.destroy();
+            if (charts.funnelBottleneck) charts.funnelBottleneck.destroy();
+            
+            charts.leadsByOrigin = new Chart(document.getElementById('leadsByOriginChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Google Ads', 'Meta Ads', 'Orgânicas', 'Prospecção', 'Indicação', 'Sem Origem'],
+                    datasets: [{
+                        label: 'Número de Leads',
+                        data: [
+                            leadsByOriginData.google, 
+                            leadsByOriginData.meta, 
+                            leadsByOriginData.organico, 
+                            leadsByOriginData.prospeccao, 
+                            leadsByOriginData.indicacao, 
+                            leadsByOriginData.semorigem
+                        ],
+                        backgroundColor: ['#4299e1', '#667eea', '#f6ad55', '#48bb78', '#9f7aea', '#ed8936'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Leads por Origem',
+                            font: { size: 18, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+            
+            charts.funnelBottleneck = new Chart(document.getElementById('funnelBottleneckChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Leads p/ Oportunidades', 'Oportunidades p/ Propostas', 'Propostas p/ Vendas'],
+                    datasets: [{
+                        label: 'Taxa de Conversão (%)',
+                        data: [
+                            parseFloat(funnelBottleneckData.oportunidades), 
+                            parseFloat(funnelBottleneckData.propostas), 
+                            parseFloat(funnelBottleneckData.vendas)
+                        ],
+                        backgroundColor: ['#f6ad55', '#e53e3e', '#ecc94b'],
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Gargalo do Funil',
+                            font: { size: 18, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSalespersonRanking(rankingData, avgLeadsPerSeller, dailySalesGoalPerSeller) {
+            const rankingTableBody = document.getElementById('ranking-tabela');
+            rankingTableBody.innerHTML = '';
+            
+            document.getElementById('avg-leads-per-seller').textContent = parseFloat(avgLeadsPerSeller).toFixed(0);
+            document.getElementById('daily-sales-goal-per-seller').textContent = formatInteger(dailySalesGoalPerSeller);
+
+            rankingData.forEach(s => {
+                const tr = document.createElement('tr');
+                let performanceColor = '';
+                if (s.desempenho === 'Desempenho Positivo') performanceColor = 'bg-green-100 text-green-800';
+                else if (s.desempenho === 'Desempenho Crítico') performanceColor = 'bg-red-100 text-red-800';
+                else performanceColor = 'bg-yellow-100 text-yellow-800';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${s.nome}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.totalLeads}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.totalVendas}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.percentualQualificacao}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.percentualProposta}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.percentualVenda}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">${s.percentualPerdidos}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">R$ ${formatBRL(s.receitaVendas)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">R$ ${formatBRL(s.perdidosReais)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold ${performanceColor} rounded-full">${s.desempenho}</td>
+                `;
+                rankingTableBody.appendChild(tr);
+            });
+        }
+
+        function renderMetaComparison(comparisonData, annualProgress) {
+            const comparisonContainer = document.getElementById('meta-comparison');
+            comparisonContainer.innerHTML = '';
+            
+            const oppStatus = comparisonData.statusOportunidades === 'Acima da meta' ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            const propStatus = comparisonData.statusPropostas === 'Acima da meta' ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            const salesStatus = comparisonData.statusVendas === 'Acima da meta' ? '<span class="text-green-600 font-bold">Acima da meta!</span>' : '<span class="text-red-600 font-bold">Abaixo da meta.</span>';
+            
+            let progressColor = annualProgress >= 90 ? 'bg-green-500' : (annualProgress >= 70 ? 'bg-yellow-500' : 'bg-red-500');
+
+            comparisonContainer.innerHTML = `
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Oportunidades:</p>
+                    <p class="text-3xl font-bold mt-1">${comparisonData.oportunidades} / ${Math.round(comparisonData.metaOportunidades)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${oppStatus} (${comparisonData.percentualOportunidades}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Propostas:</p>
+                    <p class="text-3xl font-bold mt-1">${comparisonData.propostas} / ${Math.round(comparisonData.metaPropostas)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${propStatus} (${comparisonData.percentualPropostas}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md text-center">
+                    <p class="text-lg font-semibold text-gray-800">Vendas:</p>
+                    <p class="text-3xl font-bold mt-1">${comparisonData.vendas} / ${Math.round(comparisonData.metaVendas)}</p>
+                    <p class="text-sm text-gray-600 mt-1">${salesStatus} (${comparisonData.percentualVendas}%)</p>
+                </div>
+                <div class="metric-card p-4 bg-white rounded-xl shadow-md sm:col-span-3 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Progresso da Meta Anual de Vendas:</p>
+                    <div class="w-full bg-gray-300 rounded-full h-4 mt-2">
+                        <div class="${progressColor} h-4 rounded-full transition-all duration-500" style="width: ${annualProgress > 100 ? 100 : annualProgress}%;"></div>
+                    </div>
+                    <p class="text-3xl font-bold mt-2">${annualProgress}%</p>
+                </div>
+            `;
+        }
+        
+        function renderGoalsTable(goalsData) {
+            const metasTableBody = document.getElementById('metas-tabela');
+            metasTableBody.innerHTML = '';
+            
+            const orderedPeriods = ['anual', 'mensal', 'semanal', 'diário'];
+            orderedPeriods.forEach(period => {
+                const rowData = goalsData[period];
+                if (rowData) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${period.toUpperCase()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${rowData.leads}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${rowData.oportunidades}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${rowData.propostas}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${rowData.vendas}</td>
+                    `;
+                    metasTableBody.appendChild(tr);
+                }
+            });
+        }
+
+        // Executar tudo quando o DOM estiver carregado
+        window.addEventListener('load', () => {
+            updateDashboard();
+            document.getElementById('filterBtn').addEventListener('click', updateDashboard);
         });
-
-        // Gráficos
-        if (window.leadsChart) window.leadsChart.destroy();
-        if (window.funnelChart) window.funnelChart.destroy();
-
-        window.leadsChart = new Chart(document.getElementById('leadsByOriginChart'), {
-          type: 'doughnut',
-          data: {
-            labels: ["Google Ads","Meta Ads","Prospecção","Indicação","Orgânico","Sem Origem"],
-            datasets: [{
-              data: [
-                data.leadsPorOrigem.googleAds,
-                data.leadsPorOrigem.metaAds,
-                data.leadsPorOrigem.prospeccao,
-                data.leadsPorOrigem.indicacao,
-                data.leadsPorOrigem.organicas,
-                data.leadsPorOrigem.semOrigem
-              ],
-              backgroundColor: ["#4299e1","#667eea","#48bb78","#f6ad55","#9f7aea","#ed8936"]
-            }]
-          }
-        });
-
-        window.funnelChart = new Chart(document.getElementById('funnelBottleneckChart'), {
-          type: 'pie',
-          data: {
-            labels: ["Oportunidades","Propostas","Vendas","Perdidos"],
-            datasets: [{
-              data: [
-                parseFloat(data.gargaloFunil.oportunidades),
-                parseFloat(data.gargaloFunil.propostas),
-                parseFloat(data.gargaloFunil.vendas),
-                parseFloat(data.gargaloFunil.perdidos)
-              ],
-              backgroundColor: ["#f6ad55","#e53e3e","#48bb78","#9f7aea"]
-            }]
-          }
-        });
-
-      } catch (err) {
-        console.error("Erro ao buscar dados:", err);
-      }
-    }
-
-    document.getElementById('filterBtn').addEventListener('click', fetchKpis);
-    window.addEventListener('load', fetchKpis);
-  </script>
+    </script>
 </body>
 </html>
